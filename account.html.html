@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گلدیار پرو - حساب کاربری</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Login/Register Page */
+        .auth-container {
+            max-width: 450px;
+            margin: 50px auto;
+            background: rgba(30, 35, 50, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon { font-size: 60px; margin-bottom: 10px; }
+        
+        .logo-text {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            color: #9ca3af;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+        }
+
+        .form { display: none; }
+        .form.active { display: block; }
+
+        .input-group { margin-bottom: 20px; }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d1d5db;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #fbbf24;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        /* Dashboard */
+        .dashboard { display: none; }
+        
+        .header {
+            background: rgba(30, 35, 50, 0.95);
+            padding: 20px 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-logout {
+            padding: 10px 20px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover { background: rgba(239, 68, 68, 0.3); }
+
+        .card {
+            background: rgba(30, 35, 50, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #fbbf24;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #9ca3af; }
+        .info-value { font-weight: bold; color: #fbbf24; }
+
+        .api-key-box {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .api-key {
+            font-family: 'Courier New', monospace;
+            color: #10b981;
+            word-break: break-all;
+            font-size: 14px;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 15px;
+            font-size: 12px;
+            background: rgba(251, 191, 36, 0.2);
+            border: 1px solid #fbbf24;
+            border-radius: 5px;
+            color: #fbbf24;
+            cursor: pointer;
+        }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid #fbbf24;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Login/Register Page -->
+    <div id="authPage" class="auth-container">
+        <div class="logo">
+            <div class="logo-icon">💎</div>
+            <div class="logo-text">گلدیار پرو</div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">ورود</div>
+            <div class="tab" onclick="switchTab('register')">ثبت‌نام</div>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="form active" onsubmit="handleLogin(event)">
+            <div class="input-group">
+                <label>ایمیل</label>
+                <input type="email" id="loginEmail" required>
+            </div>
+            <div class="input-group">
+                <label>رمز عبور</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit" class="btn" id="loginBtn">ورود</button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" class="form" onsubmit="handleRegister(event)">
+            <div class="input-group">
+                <label>نام (اختیاری)</label>
+                <input type="text" id="registerName">
+            </div>
+            <div class="input-group">
+                <label>ایمیل</label>
+                <input type="email" id="registerEmail" required>
+            </div>
+            <div class="input-group">
+                <label>رمز عبور</label>
+                <input type="password" id="registerPassword" required>
+            </div>
+            <button type="submit" class="btn" id="registerBtn">ثبت‌نام</button>
+        </form>
+
+        <div style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 20px;">
+            با ثبت‌نام، API Key رایگان دریافت می‌کنید
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboardPage" class="dashboard">
+        <div class="header">
+            <div class="logo-text">💎 گلدیار پرو</div>
+            <div>
+                <span id="userName" style="margin-left: 20px;">کاربر</span>
+                <button class="btn-logout" onclick="logout()">خروج</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🔑 API Key شما</div>
+            <p style="color: #9ca3af; margin-bottom: 15px;">
+                از این کلید برای دسترسی به API استفاده کنید
+            </p>
+            <div class="api-key-box">
+                <button class="copy-btn" onclick="copyApiKey()">کپی</button>
+                <div class="api-key" id="apiKey">...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📊 اطلاعات حساب</div>
+            <div class="info-row">
+                <span class="info-label">ایمیل:</span>
+                <span class="info-value" id="userEmail">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">پلن:</span>
+                <span class="info-value" id="userPlan">FREE</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">درخواست‌ها:</span>
+                <span class="info-value"><span id="usageRequests">0</span> / <span id="usageLimit">1000</span></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📖 نحوه استفاده</div>
+            <p style="color: #9ca3af; margin-bottom: 15px;">
+                در درخواست‌های API، header زیر را اضافه کنید:
+            </p>
+            <div style="background: #0a0e1a; padding: 15px; border-radius: 10px; overflow-x: auto;">
+                <code style="color: #10b981; font-family: 'Courier New', monospace;">
+X-API-Key: YOUR_API_KEY
+                </code>
+            </div>
+        </div>
+
+        <button class="btn" onclick="goToApp()" style="max-width: 300px; margin: 20px auto; display: block;">
+            🚀 برو به اپلیکیشن
+        </button>
+    </div>
+
+</div>
+
+<script>
+const API_URL = 'https://goldyar-auth.yousef7777t.workers.dev';
+
+// تعویض تب
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+    
+    if (tab === 'login') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('loginForm').classList.add('active');
+    } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('registerForm').classList.add('active');
+    }
+    hideMessage();
+}
+
+// نمایش پیام
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = `message ${type}`;
+    msg.style.display = 'block';
+}
+
+function hideMessage() {
+    document.getElementById('message').style.display = 'none';
+}
+
+// لاگین
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span>در حال ورود...';
+    hideMessage();
+    
+    try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            localStorage.setItem('goldyar_token', data.token);
+            localStorage.setItem('goldyar_user', JSON.stringify(data.user));
+            showDashboard(data.user);
+        } else {
+            showMessage(data.error || 'خطا در ورود', 'error');
+            btn.disabled = false;
+            btn.textContent = 'ورود';
+        }
+    } catch (error) {
+        showMessage('خطا در اتصال به سرور', 'error');
+        btn.disabled = false;
+        btn.textContent = 'ورود';
+    }
+}
+
+// ثبت‌نام
+async function handleRegister(e) {
+    e.preventDefault();
+    const name = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const btn = document.getElementById('registerBtn');
+    
+    if (password.length < 6) {
+        showMessage('رمز عبور باید حداقل 6 کاراکتر باشد', 'error');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span>در حال ثبت‌نام...';
+    hideMessage();
+    
+    try {
+        const response = await fetch(`${API_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, name })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            localStorage.setItem('goldyar_token', data.token);
+            localStorage.setItem('goldyar_user', JSON.stringify(data.user));
+            showDashboard(data.user);
+        } else {
+            showMessage(data.error || 'خطا در ثبت‌نام', 'error');
+            btn.disabled = false;
+            btn.textContent = 'ثبت‌نام';
+        }
+    } catch (error) {
+        showMessage('خطا در اتصال به سرور', 'error');
+        btn.disabled = false;
+        btn.textContent = 'ثبت‌نام';
+    }
+}
+
+// نمایش داشبورد
+function showDashboard(user) {
+    document.getElementById('authPage').classList.add('hidden');
+    document.getElementById('dashboardPage').style.display = 'block';
+    
+    document.getElementById('userName').textContent = user.name;
+    document.getElementById('userEmail').textContent = user.email;
+    document.getElementById('userPlan').textContent = user.plan.toUpperCase();
+    document.getElementById('apiKey').textContent = user.apiKey;
+    document.getElementById('usageRequests').textContent = user.usage?.requests || 0;
+    document.getElementById('usageLimit').textContent = user.usage?.limit || 1000;
+}
+
+// کپی API Key
+function copyApiKey() {
+    const apiKey = document.getElementById('apiKey').textContent;
+    navigator.clipboard.writeText(apiKey);
+    event.target.textContent = '✓ کپی شد';
+    setTimeout(() => {
+        event.target.textContent = 'کپی';
+    }, 2000);
+}
+
+// خروج
+function logout() {
+    if (confirm('آیا مطمئن هستید؟')) {
+        localStorage.removeItem('goldyar_token');
+        localStorage.removeItem('goldyar_user');
+        location.reload();
+    }
+}
+
+// برو به اپلیکیشن
+function goToApp() {
+    window.location.href = '/';
+}
+
+// چک کردن لاگین در شروع
+window.addEventListener('load', async () => {
+    const token = localStorage.getItem('goldyar_token');
+    if (token) {
+        try {
+            const response = await fetch(`${API_URL}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showDashboard(data.user);
+            } else {
+                localStorage.removeItem('goldyar_token');
+            }
+        } catch (error) {
+            localStorage.removeItem('goldyar_token');
+        }
+    }
+});
+</script>
+
+</body>
+</html>
