@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پلن‌ها و قیمت‌ها - گلدیار پرو</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-top: 40px;
+        }
+
+        .logo {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #9ca3af;
+        }
+
+        /* Pricing Cards */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .plan-card {
+            background: rgba(30, 35, 50, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(251, 191, 36, 0.3);
+            border-color: #fbbf24;
+        }
+
+        .plan-card.popular {
+            border-color: #fbbf24;
+            box-shadow: 0 10px 40px rgba(251, 191, 36, 0.4);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -15px;
+            right: 30px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .plan-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .plan-name {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .plan-description {
+            color: #9ca3af;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .plan-price {
+            margin-bottom: 30px;
+        }
+
+        .price-amount {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .price-period {
+            color: #9ca3af;
+            font-size: 16px;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .plan-features li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            font-size: 20px;
+        }
+
+        .feature-icon.check { color: #10b981; }
+        .feature-icon.cross { color: #ef4444; }
+
+        .plan-button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-free {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 2px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .btn-free:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: #fbbf24;
+        }
+
+        .btn-pro {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+        }
+
+        .btn-pro:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.4);
+        }
+
+        .btn-enterprise {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+        }
+
+        .btn-enterprise:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Comparison Table */
+        .comparison-section {
+            margin-top: 80px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .comparison-table {
+            background: rgba(30, 35, 50, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        th {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fbbf24;
+        }
+
+        td:first-child {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        /* FAQ */
+        .faq-section {
+            margin-top: 80px;
+            margin-bottom: 60px;
+        }
+
+        .faq-item {
+            background: rgba(30, 35, 50, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .faq-question {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fbbf24;
+            margin-bottom: 15px;
+        }
+
+        .faq-answer {
+            color: #9ca3af;
+            line-height: 1.8;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9ca3af;
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .footer-btn {
+            padding: 12px 30px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            border-radius: 10px;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .footer-btn:hover {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+        }
+
+        @media (max-width: 768px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            .title {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">💎</div>
+        <h1 class="title">پلن‌ها و قیمت‌ها</h1>
+        <p class="subtitle">انتخاب کنید، شروع کنید، موفق شوید</p>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="pricing-grid">
+        
+        <!-- Free Plan -->
+        <div class="plan-card">
+            <div class="plan-icon">🆓</div>
+            <div class="plan-name">مهمان</div>
+            <div class="plan-description">برای آشنایی با سیستم</div>
+            <div class="plan-price">
+                <div class="price-amount">رایگان</div>
+                <div class="price-period">محدود</div>
+            </div>
+            <ul class="plan-features">
+                <li><span class="feature-icon check">✓</span> 50 درخواست در روز</li>
+                <li><span class="feature-icon cross">✗</span> بدون ثبت‌نام</li>
+                <li><span class="feature-icon cross">✗</span> بدون API Key</li>
+                <li><span class="feature-icon cross">✗</span> بدون تاریخچه</li>
+                <li><span class="feature-icon cross">✗</span> بدون پشتیبانی</li>
+            </ul>
+            <button class="plan-button btn-free" onclick="window.location.href='/'">
+                شروع استفاده
+            </button>
+        </div>
+
+        <!-- Free Registered Plan -->
+        <div class="plan-card popular">
+            <div class="popular-badge">⭐ پرطرفدار</div>
+            <div class="plan-icon">📝</div>
+            <div class="plan-name">رایگان</div>
+            <div class="plan-description">با ثبت‌نام، امکانات بیشتر</div>
+            <div class="plan-price">
+                <div class="price-amount">0 تومان</div>
+                <div class="price-period">برای همیشه</div>
+            </div>
+            <ul class="plan-features">
+                <li><span class="feature-icon check">✓</span> 1,000 درخواست در ماه</li>
+                <li><span class="feature-icon check">✓</span> API Key شخصی</li>
+                <li><span class="feature-icon check">✓</span> ذخیره تاریخچه</li>
+                <li><span class="feature-icon check">✓</span> Dashboard اختصاصی</li>
+                <li><span class="feature-icon check">✓</span> پشتیبانی ایمیل</li>
+            </ul>
+            <button class="plan-button btn-pro" onclick="window.location.href='/account.html'">
+                ثبت‌نام رایگان
+            </button>
+        </div>
+
+        <!-- Pro Plan -->
+        <div class="plan-card">
+            <div class="plan-icon">💎</div>
+            <div class="plan-name">پرو</div>
+            <div class="plan-description">برای استفاده حرفه‌ای</div>
+            <div class="plan-price">
+                <div class="price-amount">99,000 تومان</div>
+                <div class="price-period">در ماه</div>
+            </div>
+            <ul class="plan-features">
+                <li><span class="feature-icon check">✓</span> 50,000 درخواست در ماه</li>
+                <li><span class="feature-icon check">✓</span> API Key اختصاصی</li>
+                <li><span class="feature-icon check">✓</span> تاریخچه نامحدود</li>
+                <li><span class="feature-icon check">✓</span> تحلیل‌های پیشرفته</li>
+                <li><span class="feature-icon check">✓</span> پشتیبانی اولویت‌دار</li>
+                <li><span class="feature-icon check">✓</span> بدون تبلیغات</li>
+                <li><span class="feature-icon check">✓</span> آپدیت‌های اختصاصی</li>
+            </ul>
+            <button class="plan-button btn-pro" onclick="upgradeToPro()">
+                خرید پلن Pro
+            </button>
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div class="plan-card">
+            <div class="plan-icon">🏢</div>
+            <div class="plan-name">سازمانی</div>
+            <div class="plan-description">برای شرکت‌ها و تیم‌ها</div>
+            <div class="plan-price">
+                <div class="price-amount">تماس بگیرید</div>
+                <div class="price-period">سفارشی‌سازی کامل</div>
+            </div>
+            <ul class="plan-features">
+                <li><span class="feature-icon check">✓</span> درخواست نامحدود</li>
+                <li><span class="feature-icon check">✓</span> چند کاربره</li>
+                <li><span class="feature-icon check">✓</span> API اختصاصی</li>
+                <li><span class="feature-icon check">✓</span> گزارش‌های سفارشی</li>
+                <li><span class="feature-icon check">✓</span> پشتیبانی 24/7</li>
+                <li><span class="feature-icon check">✓</span> قرارداد SLA</li>
+                <li><span class="feature-icon check">✓</span> آموزش اختصاصی</li>
+            </ul>
+            <button class="plan-button btn-enterprise" onclick="contactSales()">
+                تماس با فروش
+            </button>
+        </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="comparison-section">
+        <h2 class="section-title">مقایسه دقیق پلن‌ها</h2>
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ویژگی</th>
+                        <th>مهمان</th>
+                        <th>رایگان</th>
+                        <th>پرو</th>
+                        <th>سازمانی</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>درخواست‌های ماهانه</td>
+                        <td>50/روز</td>
+                        <td>1,000</td>
+                        <td>50,000</td>
+                        <td>نامحدود</td>
+                    </tr>
+                    <tr>
+                        <td>API Key</td>
+                        <td>✗</td>
+                        <td>✓</td>
+                        <td>✓</td>
+                        <td>✓</td>
+                    </tr>
+                    <tr>
+                        <td>ذخیره تاریخچه</td>
+                        <td>✗</td>
+                        <td>30 روز</td>
+                        <td>نامحدود</td>
+                        <td>نامحدود</td>
+                    </tr>
+                    <tr>
+                        <td>تحلیل‌های پیشرفته</td>
+                        <td>✗</td>
+                        <td>✗</td>
+                        <td>✓</td>
+                        <td>✓</td>
+                    </tr>
+                    <tr>
+                        <td>پشتیبانی</td>
+                        <td>✗</td>
+                        <td>ایمیل</td>
+                        <td>اولویت‌دار</td>
+                        <td>24/7</td>
+                    </tr>
+                    <tr>
+                        <td>هزینه</td>
+                        <td>رایگان</td>
+                        <td>رایگان</td>
+                        <td>99,000 تومان</td>
+                        <td>سفارشی</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="faq-section">
+        <h2 class="section-title">سوالات متداول</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question">❓ آیا می‌توانم بعداً پلن خود را ارتقا دهم؟</div>
+            <div class="faq-answer">
+                بله! می‌توانید هر زمان که بخواهید از پلن رایگان به Pro یا از Pro به Enterprise ارتقا دهید.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">❓ آیا نیاز به کارت اعتباری برای پلن رایگان دارم؟</div>
+            <div class="faq-answer">
+                خیر! پلن رایگان هیچ نیازی به کارت اعتباری ندارد. فقط با ایمیل ثبت‌نام کنید.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">❓ آیا می‌توانم هر زمان کنسل کنم؟</div>
+            <div class="faq-answer">
+                بله! می‌توانید هر زمان که بخواهید اشتراک خود را کنسل کنید. هیچ هزینه پنهانی وجود ندارد.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">❓ آیا تخفیف سالانه دارید؟</div>
+            <div class="faq-answer">
+                بله! با پرداخت سالانه، 20% تخفیف دریافت می‌کنید. (792,000 تومان به جای 1,188,000 تومان)
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>سوال دارید؟ با ما تماس بگیرید: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="afdcdadfdfc0dddbefc8c0c3cbd6cedd81ccc0c2">[email&#160;protected]</a></p>
+        <div class="footer-buttons">
+            <a href="/" class="footer-btn">🏠 صفحه اصلی</a>
+            <a href="/account.html" class="footer-btn">👤 ورود / ثبت‌نام</a>
+        </div>
+    </div>
+
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+function upgradeToPro() {
+    // چک کردن لاگین
+    const user = localStorage.getItem('goldyar_user');
+    if (!user) {
+        alert('ابتدا باید ثبت‌نام کنید');
+        window.location.href = '/account.html';
+        return;
+    }
+    
+    // انتقال به صفحه پرداخت (Phase 4.3)
+    alert('صفحه پرداخت به زودی ف
