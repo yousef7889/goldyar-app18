@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <!-- ★ SEC: Content Security Policy -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https:; connect-src 'self' https://*.yousef7777t.workers.dev https://call4.tgju.org https://api.tgju.org https://api.navasan.com https://data-asg.goldprice.org https://open.er-api.com https://api.coingecko.com https://*.tradingview.com; frame-src https://*.tradingview.com https://*.tradingview-widget.com https://challenges.cloudflare.com; font-src 'self' https://cdn.jsdelivr.net https://*.tradingview.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.tradingview.com https://challenges.cloudflare.com; img-src 'self' data: blob: https:;">
-<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https:; connect-src 'self' https://*.yousef7777t.workers.dev https://call4.tgju.org https://api.tgju.org https://api.navasan.com https://data-asg.goldprice.org https://open.er-api.com https://api.coingecko.com https://*.tradingview.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://mygold18chat-default-rtdb.asia-southeast1.firebasedatabase.app; frame-src https://*.tradingview.com https://*.tradingview-widget.com https://challenges.cloudflare.com; font-src 'self' https://cdn.jsdelivr.net https://*.tradingview.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.tradingview.com https://challenges.cloudflare.com; worker-src blob:; img-src 'self' data: blob: https:;">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#08090d">
@@ -1391,9 +1390,14 @@ var realDataKeys={},realChanges={};
 if(!window.gP){window.gP={goldPrice:2035,silverPrice:25,usdRate:580000000,mesghalMarket:0,geram18Market:0,dirhamRate:15800000,coinPrice:0,gold18UAE_AED:0,gold18UAEtoman:0,bourse:0,brent:0,tether:0,btc:0};}
 var gP=window.gP;
 var API_SOURCES={
-  navasan:{url:'https://gold18ayar-proxy.yousef7777t.workers.dev/navasan?item=',items:{gold18:'gold_18k',usd:'usd',eur:'eur',coin:'emami',nim:'nim',rob:'rob',mesghal:'mesghal'}},
+  /* ★ FIX: مستقیم از API اصلی — تا زمان آپدیت Worker */
+  navasan:{url:'https://gold18ayar-proxy.yousef7777t.workers.dev/navasan?item=',
+           directUrl:'https://api.navasan.com/latest/?item=',
+           items:{gold18:'gold_18k',usd:'usd',eur:'eur',coin:'emami',nim:'nim',rob:'rob',mesghal:'mesghal'}},
   tgju:{url:'https://call4.tgju.org/ajax.json'},
-  coingecko:{url:'https://gold18ayar-proxy.yousef7777t.workers.dev/crypto'}
+  /* CoinGecko مستقیم — بدون نیاز به Worker */
+  coingecko:{url:'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,solana&vs_currencies=usd&include_24hr_change=true',
+             proxyUrl:'https://gold18ayar-proxy.yousef7777t.workers.dev/crypto'}
 };
 
 function isThreeClickTool(t){return t==='riskReward'||t==='fibExt';}
@@ -2526,41 +2530,47 @@ function fetchNavasan(){
   var done=0,total=keys.length;
   keys.forEach(function(k){
     var apiItem=API_SOURCES.navasan.items[k];
-    /* ★ FIX: timeout 8000→15000 + fallback to direct Navasan API */
-    var proxyUrl=API_SOURCES.navasan.url+apiItem;
+    /* ★ FIX: ترتیب جدید — مستقیم اول، proxy به‌عنوان fallback
+       چون Worker قدیمی /navasan route ندارد (530) */
     var directUrl='https://api.navasan.com/latest/?item='+apiItem;
-    function tryUrl(url,label){
-      fetchWithTimeout(url,15000)
-      .then(function(r){return r.json();})
+    var proxyUrl=API_SOURCES.navasan.url+apiItem;
+    var urls=[directUrl, proxyUrl];
+    function tryUrl(idx){
+      if(idx>=urls.length){
+        done++;if(done>=total){buildMarquee();buildStatusBar();}
+        slog('Navasan ERR ('+k+'): همه منابع ناموفق','err');
+        return;
+      }
+      fetchWithTimeout(urls[idx],12000)
+      .then(function(r){
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        return r.json();
+      })
       .then(function(d){
         if(d&&d.value){
           var v=parseFloat(String(d.value).replace(/,/g,''));
           if(v>0){
             prevP[k]=P[k]||v;P[k]=v;
-            if(k==='gold18'&&v>0){gP.geram18Market=v;window.gP.geram18Market=v;}
-            if(k==='mesghal'&&v>0){gP.mesghalMarket=v;window.gP.mesghalMarket=v;}
-            if(k==='coin'&&v>0){gP.coinPrice=v;window.gP.coinPrice=v;}
-            if(k==='usd'&&v>0){gP.usdRate=v*10;window.gP.usdRate=v*10;}
+            if(k==='gold18'){gP.geram18Market=v;window.gP.geram18Market=v;}
+            if(k==='mesghal'){gP.mesghalMarket=v;window.gP.mesghalMarket=v;}
+            if(k==='coin'){gP.coinPrice=v;window.gP.coinPrice=v;}
+            if(k==='usd'){gP.usdRate=v*10;window.gP.usdRate=v*10;}
             if(d.change!==undefined&&d.change!==null)realChanges[k]=parseFloat(d.change);
             realDataKeys[k]=true;
             updateCardPrice(k,v);
-            slog('Navasan('+label+') ← '+k+': '+fmtP(v),'ok');
+            slog('Navasan('+(idx===0?'direct':'proxy')+') ← '+k+': '+fmtP(v),'ok');
+            done++;if(done>=total){buildMarquee();buildStatusBar();}
+            return;
           }
         }
-      }).catch(function(e){
-        if(label==='proxy'){
-          slog('Navasan proxy ERR ('+k+'): '+e.message,'err');
-          tryUrl(directUrl,'direct');
-          return;
-        }
-        slog('Navasan ERR ('+k+'): '+e.message,'err');
-      }).finally(function(){
-        if(label!=='proxy'){
-          done++;if(done>=total){buildMarquee();buildStatusBar();}
-        }
+        throw new Error('no value');
+      })
+      .catch(function(e){
+        slog('Navasan src'+(idx+1)+' ERR ('+k+'): '+e.message,'err');
+        tryUrl(idx+1);
       });
     }
-    tryUrl(proxyUrl,'proxy');
+    tryUrl(0);
   });
 }
 
@@ -2600,29 +2610,40 @@ function fetchTGJU(){
 }
 
 function fetchCoinGecko(){
-  fetchWithTimeout(API_SOURCES.coingecko.url,8000)
-  .then(function(r){return r.json();})
-  .then(function(d){
-    var map={bitcoin:'BTC',ethereum:'ETH',binancecoin:'BNB',solana:'SOL'};
-    Object.keys(map).forEach(function(cgKey){
-      var myKey=map[cgKey];
-      if(d[cgKey]&&d[cgKey].usd){
-        var v=d[cgKey].usd;
-        prevP[myKey]=P[myKey]||v;P[myKey]=v;
-        // ★ FIX: استخراج درصد تغییر ۲۴ ساعته
-        if(d[cgKey].usd_24h_change!==undefined&&d[cgKey].usd_24h_change!==null){
-          realChanges[myKey]=d[cgKey].usd_24h_change;
+  /* ★ FIX: مستقیم از CoinGecko (public API — بدون نیاز به Worker) */
+  var urls=[
+    'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,solana&vs_currencies=usd&include_24hr_change=true',
+    'https://gold18ayar-proxy.yousef7777t.workers.dev/crypto'
+  ];
+  function tryUrl(idx){
+    if(idx>=urls.length)return;
+    fetchWithTimeout(urls[idx],12000)
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(d){
+      var map={bitcoin:'BTC',ethereum:'ETH',binancecoin:'BNB',solana:'SOL'};
+      Object.keys(map).forEach(function(cgKey){
+        var myKey=map[cgKey];
+        if(d[cgKey]&&d[cgKey].usd){
+          var v=d[cgKey].usd;
+          prevP[myKey]=P[myKey]||v;P[myKey]=v;
+          if(d[cgKey].usd_24h_change!==undefined&&d[cgKey].usd_24h_change!==null){
+            realChanges[myKey]=parseFloat(d[cgKey].usd_24h_change);
+          }
+          realDataKeys[myKey]=true;
+          updateCardPrice(myKey,v);
+          slog('CoinGecko('+idx+') ← '+myKey+': $'+v,'ok');
         }
-        realDataKeys[myKey]=true;
-        updateCardPrice(myKey,v);
-        slog('CoinGecko ← '+myKey+': $'+v,'ok');
-      }
+      });
+      buildMarquee();buildStatusBar();
+    })
+    .catch(function(e){
+      slog('CoinGecko src'+(idx+1)+' ERR: '+e.message,'err');
+      tryUrl(idx+1);
     });
-    buildMarquee();buildStatusBar();
-  }).catch(function(e){
-    slog('CoinGecko ERR: '+e.message,'err');
-  });
+  }
+  tryUrl(0);
 }
+
 
 
 function fetchAllPrices(){
@@ -4537,8 +4558,11 @@ var S={
 
 /* ── helpers ── */
 var $$=function(id){return document.getElementById(id);};
-var sl=function(k,v){try{localStorage.setItem(k,v);}catch(e){}};
-var gl=function(k){try{return localStorage.getItem(k);}catch(e){return null;}};
+/* ★ FIX: Tracking Prevention fallback — Edge/Firefox ممکن است localStorage را block کنند
+   در این صورت از حافظه موقت استفاده می‌شود تا چت کار کند */
+var _memStore={};
+var sl=function(k,v){try{localStorage.setItem(k,v);}catch(e){_memStore[k]=String(v);}};
+var gl=function(k){try{var v=localStorage.getItem(k);return v!==null?v:(_memStore[k]||null);}catch(e){return _memStore[k]||null;}};
 var fa=function(n){return String(n).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d];});};
 var es=function(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
 var ui=function(n){return (n||'?').trim()[0].toUpperCase();};
