@@ -1468,7 +1468,46 @@ var TOUR={active:false,step:0,steps:[
 ]};
 function startTour(){TOUR.active=true;TOUR.step=0;document.getElementById('tourOverlay').classList.add('show');showTourStep();}
 function endTour(){TOUR.active=false;document.getElementById('tourOverlay').classList.remove('show');document.getElementById('tourHighlight').style.display='none';document.getElementById('tourTooltip').style.display='none';localStorage.setItem('g18tourDone','1');}
-function showTourStep(){var s=TOUR.steps[TOUR.step];if(!s){endTour();return;}var el=document.querySelector(s.target);var hl=document.getElementById('tourHighlight');var tt=document.getElementById('tourTooltip');document.getElementById('tourStep').textContent='مرحله '+(TOUR.step+1)+' از '+TOUR.steps.length;document.getElementById('tourTitle').textContent=s.title;document.getElementById('tourText').textContent=s.text;document.getElementById('tourPrev').style.display=TOUR.step>0?'':'none';document.getElementById('tourNext').textContent=TOUR.step===TOUR.steps.length-1?'✅ پایان':'بعدی ▶';if(el){var r=el.getBoundingClientRect();hl.style.display='block';hl.style.top=(r.top-6)+'px';hl.style.left=(r.left-6)+'px';hl.style.width=(r.width+12)+'px';hl.style.height=(r.height+12)+'px';var ttTop=r.bottom+14;if(ttTop+200>window.innerHeight)ttTop=r.top-200;if(ttTop<10)ttTop=10;var ttLeft=Math.min(r.left,window.innerWidth-340);if(ttLeft<10)ttLeft=10;tt.style.display='block';tt.style.top=ttTop+'px';tt.style.left=ttLeft+'px';tt.style.transform='';}else{hl.style.display='none';tt.style.display='block';tt.style.top='50%';tt.style.left='50%';tt.style.transform='translate(-50%,-50%)';}}
+function showTourStep(){
+  var s=TOUR.steps[TOUR.step];
+  if(!s){endTour();return;}
+  /* ★ اگر target یک دکمه nav است، به آن scroll کن تا روی موبایل دیده شود */
+  var el=s.target ? document.querySelector(s.target) : null;
+  var hl=document.getElementById('tourHighlight');
+  var tt=document.getElementById('tourTooltip');
+  document.getElementById('tourStep').textContent='مرحله '+(TOUR.step+1)+' از '+TOUR.steps.length;
+  document.getElementById('tourTitle').textContent=s.title;
+  document.getElementById('tourText').textContent=s.text;
+  document.getElementById('tourPrev').style.display=TOUR.step>0?'':'none';
+  document.getElementById('tourNext').textContent=TOUR.step===TOUR.steps.length-1?'✅ پایان':'بعدی ▶';
+  if(el){
+    /* ★ scroll به المان تا دیده شود */
+    try{el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}catch(e){}
+    setTimeout(function(){
+      var r=el.getBoundingClientRect();
+      hl.style.display='block';
+      hl.style.top=(r.top-6)+'px';
+      hl.style.left=(r.left-6)+'px';
+      hl.style.width=(r.width+12)+'px';
+      hl.style.height=(r.height+12)+'px';
+      var ttTop=r.bottom+14;
+      if(ttTop+220>window.innerHeight)ttTop=r.top-220;
+      if(ttTop<10)ttTop=10;
+      var ttLeft=Math.min(r.left,window.innerWidth-340);
+      if(ttLeft<10)ttLeft=10;
+      tt.style.display='block';
+      tt.style.top=ttTop+'px';
+      tt.style.left=ttLeft+'px';
+      tt.style.transform='';
+    },300);
+  }else{
+    hl.style.display='none';
+    tt.style.display='block';
+    tt.style.top='50%';
+    tt.style.left='50%';
+    tt.style.transform='translate(-50%,-50%)';
+  }
+}
 document.getElementById('tourNext').onclick=function(){if(TOUR.step>=TOUR.steps.length-1){endTour();return;}TOUR.step++;showTourStep();};
 document.getElementById('tourPrev').onclick=function(){if(TOUR.step>0){TOUR.step--;showTourStep();}};
 document.getElementById('tourSkip').onclick=endTour;
@@ -4509,499 +4548,262 @@ document.addEventListener('click', function(e) {
 <script>
 (function(){
 'use strict';
-/* ══ VCC v2 — Gold19 Chat ════════════════════════════════════════ */
 
-var WK   = 'https://gold18ayar-proxy.yousef7777t.workers.dev';
-/* ★ SEC: کلید سایت Turnstile (عمومی است و می‌تواند در سورس باشد).
-   تا وقتی خالی باشد، چک ربات غیرفعال است و چت مثل قبل کار می‌کند.
-   مقدار آن را از داشبورد Cloudflare Turnstile بگیرید و اینجا بگذارید: */
-var TS_SITEKEY = '';
-var _tsWidget = null;
-var POLL = 4000;
-var COOL = 40000;
-var EDIT = 300000;
+var WORKER = 'https://gold18chatproxy.goldyarayar.workers.dev';
+var ROOM='general', replyData=null, lastMsgTime=0, allMsgs=[];
 
-/* ★ SEC: لیست کامل‌شده فیلتر کلمات نامناسب فارسی */
-var BW = [
-  /* فحش‌های اصلی */
-  'بی‌شعور','بیشعور','کسشر','کونی','جنده','مادرجنده','ننه‌جنده','ننه جنده',
-  'پدرسگ','گوه','آشغال','بیناموس','کیر','کص','کون','گاییدم','گاییده',
-  'کیری','کصکش','ممه','کلک','احمق','خفه','مرتیکه','عوضی',
-  'کثافت','نامرد','بدبخت','خر','حیوون','حیوان','گاو','الاغ',
-  'ابله','گربه','سگ پدر','لاشی','اوباش','لمپن','دیوث',
-  /* انواع نوشتاری متداول */
-  'k.s','kos','kir','kon','jende','bad bakht',
-  /* فحش انگلیسی رایج */
-  'fuck','shit','bitch','ass','dick','pussy','whore','cunt','bastard',
-  /* تکرار با نقطه/فاصله برای دور زدن */
-  'ک.و.ن','ک_و_ن','ک ی ر','ج.ن.د.ه'
-];
-
-/* ★ SEC: Worker client-side rate limiting — جلوگیری از spam درخواست */
-var _wkCallCount=0,_wkWindowStart=Date.now();
-function _wkRateCheck(){
-  var now=Date.now();
-  if(now-_wkWindowStart>60000){_wkCallCount=0;_wkWindowStart=now;}
-  _wkCallCount++;
-  return _wkCallCount<=30; /* حداکثر ۳۰ درخواست در دقیقه از سمت کلاینت */
+/* ====== تابع گرفتن اطلاعات کاربر با پشتیبانی از guest ====== */
+function getCurrentUser() {
+  // اول سیستم login سایت شما را چک می‌کند
+  if (typeof window._g18CU === 'function') {
+    var u = window._g18CU();
+    if (u && u.user) return u;
+  }
+  // اگر login نداشت → از localStorage نام می‌خواند
+  var saved = localStorage.getItem('vcc_guest');
+  if (saved) {
+    try { return JSON.parse(saved); } catch(e) {}
+  }
+  // اگر هیچ‌کدام نبود → نام بخواهد
+  var name = prompt('نام خود را وارد کنید:');
+  if (!name || !name.trim()) return null;
+  name = name.trim().substring(0, 25);
+  var guest = { name: name, user: 'g_' + name.replace(/\s/g,'_') };
+  localStorage.setItem('vcc_guest', JSON.stringify(guest));
+  return guest;
 }
 
-/* ★ SEC: header شناسایی سایت برای همه درخواست‌های Worker */
-var _APP_HEADERS={'X-App-Origin':'gold19pro','X-App-Version':'2.0','Content-Type':'application/json'};
-
-var S={
-  msgs:[], room:'general', last:0, ban:0, w:0,
-  rep:null, eid:null, ADM:null, /* ★ SEC: رمز ادمین فقط در حافظه (سشن) — نه localStorage، نه console */
-  ads:[], adIdx:0, pt:null, apt:null,
-  lastTs:0, _visSet:false
-};
-
-/* ── helpers ── */
-var $$=function(id){return document.getElementById(id);};
-/* ★ FIX: Tracking Prevention fallback — Edge/Firefox ممکن است localStorage را block کنند
-   در این صورت از حافظه موقت استفاده می‌شود تا چت کار کند */
-var _memStore={};
-var sl=function(k,v){try{localStorage.setItem(k,v);}catch(e){_memStore[k]=String(v);}};
-var gl=function(k){try{var v=localStorage.getItem(k);return v!==null?v:(_memStore[k]||null);}catch(e){return _memStore[k]||null;}};
-var fa=function(n){return String(n).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d];});};
-var es=function(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
-var ui=function(n){return (n||'?').trim()[0].toUpperCase();};
-var tf=function(ts){try{return new Date(ts).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});}catch(e){return '';}};
-var gFmt=function(n){try{return new Intl.NumberFormat('fa-IR').format(Math.round(n));}catch(e){return String(n);}};
-
-var COLORS=['#e2902f','#2fb66b','#4c7bd9','#8b5cf6','#e5484d','#06b6d4','#84cc16','#f97316'];
-var uc=function(n){var h=0;for(var i=0;i<(n||'').length;i++)h=(h*31+n.charCodeAt(i))&0x7fffffff;return COLORS[h%COLORS.length];};
-
-function me(){
-  try{if(typeof window._g18CU==='function'){var u=window._g18CU();if(u)return u;}}catch(e){}
-  return null;
+function api(path, data) {
+  var opts = data
+    ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}
+    : {method:'GET'};
+  return fetch(WORKER + path, opts).then(function(r){ return r.json(); });
 }
-function mI(){var u=me();return u?(u.uid||u.email||'anon'):'guest_'+(gl('vcc_gid')||function(){var id=Math.random().toString(36).slice(2);sl('vcc_gid',id);return id;}());}
-function mN(){var u=me();if(!u)return gl('vcc_gname')||'مهمان';return u.name||u.displayName||(u.email?u.email.split('@')[0]:'کاربر');}
-function bad(t){
-  if(!t)return false;
-  var l=t.toLowerCase();
-  /* ★ SEC: نرمال‌سازی برای تشخیص تلاش دور زدن فیلتر با نقطه/فاصله/زیرخط */
-  var norm=l.replace(/[\s._\-*|،,؟?!.،]/g,'').replace(/0/g,'o').replace(/3/g,'e').replace(/1/g,'i');
-  /* بررسی هر دو نسخه — اصلی و نرمال‌شده */
-  return BW.some(function(w){
-    var wn=w.toLowerCase().replace(/[\s._\-*|،,؟?!.،]/g,'');
-    return l.indexOf(w.toLowerCase())>=0 || norm.indexOf(wn)>=0;
+
+function init() {
+  console.log('VCC Chat: شروع به کار کرد ✅');
+  fetchMsgs();
+  setInterval(fetchMsgs,   5000);
+  setInterval(pingOnline, 25000);
+  pingOnline();
+  fixShareBtn();
+}
+
+function fetchMsgs() {
+  var url = '/messages?room=' + ROOM + (lastMsgTime > 0 ? '&since=' + lastMsgTime : '');
+  api(url).then(function(r) {
+    if (!r.ok || !r.msgs || !r.msgs.length) return;
+    if (lastMsgTime === 0) {
+      allMsgs = r.msgs;
+    } else {
+      r.msgs.forEach(function(m) {
+        if (!allMsgs.find(function(x){ return x._k === m._k; })) allMsgs.push(m);
+      });
+      if (allMsgs.length > 150) allMsgs = allMsgs.slice(-150);
+    }
+    lastMsgTime = Math.max.apply(null, allMsgs.map(function(m){ return m.t || 0; }));
+    renderMsgs(allMsgs);
+  }).catch(function(e){ console.warn('VCC fetch error:', e); });
+}
+
+function pushMsg(payload) {
+  console.log('VCC: ارسال پیام →', payload.txt);
+  api('/send', payload).then(function(r) {
+    if (r.ok && r.msg) {
+      console.log('VCC: پیام ارسال شد ✅');
+      addMsg(r.msg);
+    } else {
+      console.error('VCC: خطای Worker →', r);
+      if (typeof toast === 'function') toast('خطا در ارسال', 'err');
+    }
+  }).catch(function(e){
+    console.error('VCC: خطای fetch →', e);
+    if (typeof toast === 'function') toast('خطا در ارسال', 'err');
   });
 }
 
-/* ── DOM Helpers ── */
-
-/* ── DOM Helpers ── */
-function sm(t,tp){
-  var b=$$('vccSys');if(!b)return;
-  b.textContent=t;b.style.color=tp==='err'?'var(--red)':tp==='ok'?'var(--green)':'var(--gold)';
-  b.style.opacity='1';clearTimeout(b._t);
-  b._t=setTimeout(function(){b.style.opacity='0';},3000);
+function addMsg(msg) {
+  var found = false;
+  for (var i = 0; i < allMsgs.length; i++) {
+    if (allMsgs[i]._k === msg._k) { allMsgs[i] = msg; found = true; break; }
+  }
+  if (!found) { allMsgs.push(msg); if (allMsgs.length > 150) allMsgs.shift(); }
+  if (msg.t > lastMsgTime) lastMsgTime = msg.t;
+  renderMsgs(allMsgs);
 }
-function updOL(n){
-  var el=$$('vccOnline');if(el)el.textContent=fa(n||1);
-  var dot=document.querySelector('.vcc-online-dot');if(dot)dot.style.background='#2fb66b';
-}
-function ping(){try{var a=new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAA');a.volume=.15;a.play().catch(function(){});}catch(e){}}
 
-/* ── Message Render ── */
-function rM(m){
-  var own=(m.userId===mI()),cl=uc(m.username);
-  var rf='';
-  if(m.replyTo){
-    rf='<div class="vcc-ref" data-goto="'+es(m.replyTo.id)+'">'
-     +'<div class="vcc-ref-name">'+es(m.replyTo.username)+'</div>'
-     +'<div>'+es((m.replyTo.text||'').slice(0,50))+'</div></div>';
-  }
-  var acts='<div class="vcc-acts">'
-    +'<button class="vca-r" data-mid="'+es(m.id)+'" title="پاسخ">↩️</button>';
-  if(own&&(Date.now()-m.ts<EDIT)&&!m.edited){
-    acts+='<button class="vca-e" data-mid="'+es(m.id)+'">✏️</button>'
-         +'<button class="vca-d" data-mid="'+es(m.id)+'" style="color:var(--red)">🗑</button>';
-  }
-  if(S.ADM&&me()){
-    acts+='<button class="vca-ad" data-mid="'+es(m.id)+'" title="حذف ادمین" style="color:var(--red);font-size:9px">🛡</button>';
-  }
-  acts+='</div>';
-  var txt=m.text||'';
-  var bubbleContent;
-  if(txt.startsWith('__CHART__')){
-    /* ★ FIX: نمایش تصویر نمودار به جای متن base64 */
-    /* ★ SEC: اعتبارسنجی آدرس تصویر برای جلوگیری از XSS ذخیره‌شده */
-    var imgSrc=txt.slice(9);
-    if(/^(data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=\s]+|https:\/\/[^\s"'<>]+)$/i.test(imgSrc)){
-      bubbleContent='<img src="'+es(imgSrc)+'" style="max-width:100%;border-radius:8px;display:block;margin-top:4px" alt="📊 تحلیل نمودار" loading="lazy">';
-    }else{
-      bubbleContent='<span>'+es(txt)+'</span>';
+function pingOnline() {
+  var u = getCurrentUser(); if (!u) return;
+  api('/online', {room:ROOM, u:u.name, un:u.user}).then(function(r) {
+    var el = document.getElementById('vccOnline');
+    if (el && r.count !== undefined) el.textContent = r.count;
+  }).catch(function(){});
+}
+
+/* ====== ارسال پیام ====== */
+window.vccSend = function() {
+  var inp = document.getElementById('vccInput');
+  if (!inp) { console.error('VCC: المان vccInput پیدا نشد!'); return; }
+  var txt = inp.value.trim();
+  if (!txt) return;
+
+  var u = getCurrentUser();
+  if (!u) { if (typeof toast === 'function') toast('لطفاً نام خود را وارد کنید', 'warn'); return; }
+
+  // دستور ربات
+  if (txt[0] === '/') {
+    var br = botCmd(txt);
+    if (br !== null) {
+      allMsgs.push({_k:'_'+Date.now(), u:'🤖 ربات', un:'__bot__', txt:br, bot:true, t:Date.now()});
+      renderMsgs(allMsgs);
+      inp.value = ''; vccAutoGrow(inp); return;
     }
-  }else{
-    bubbleContent='<span>'+es(txt)+'</span>';
   }
-  return '<div class="vcc-msg'+(own?' own':'')+'" id="vm'+es(m.id)+'" data-mid="'+es(m.id)+'">'
-    +acts
-    +'<div class="vcc-av" style="background:'+cl+'">'+es(ui(m.username))+'</div>'
-    +'<div class="vcc-body"><div class="vcc-meta">'
-      +'<span class="vcc-name" style="color:'+cl+'">'+es(m.username)
-      +(m.edited?' <span style="font-size:8px;opacity:.5">(ویرایش)</span>':'')
-      +'</span>'
-      +'<span class="vcc-time">'+tf(m.ts)+'</span>'
-    +'</div>'
-    +'<div class="vcc-bubble'+(own?' own-b':' oth-b')+'">'+rf+bubbleContent+'</div>'
-    +'</div></div>';
-}
-function addM(m,sc){
-  var b=$$('vccMsgs');if(!b)return;
-  var d=document.createElement('div');d.innerHTML=rM(m);b.appendChild(d.firstChild);
-  if(sc!==false)b.scrollTop=b.scrollHeight;
-}
-function rAll(){
-  var b=$$('vccMsgs');if(!b)return;
-  b.innerHTML=S.msgs.length?'':'<div class="vcc-sys">👋 اولین پیام را بنویسید</div>';
-  S.msgs.forEach(function(m){addM(m,false);});
-  b.scrollTop=b.scrollHeight;
-}
 
-/* ── Network ── */
-async function poll(){
-  try{
-    var since = S.lastTs > 0 ? S.lastTs : 0;
-    /* GET درخواست — بدون header اضافی تا با Worker قدیمی هم سازگار باشد */
-    var r=await fetch(WK+'/chat?since='+since+'&room='+encodeURIComponent(S.room),{
-      cache:'no-store'
-    });
-    if(!r.ok)return;
-    var data=await r.json();
-    if(!data||data.error)return;
+  pushMsg({room:ROOM, u:u.name, un:u.user, txt:txt, rep:replyData||null});
+  inp.value = '';
+  inp.style.height = '36px';
+  window.vccCancelReply();
+};
 
-    var msgs = data.messages||[];
-    updOL(data.online||1);
+window.vccRoom = function(btn) {
+  var r = btn.getAttribute('data-r'); if (r === ROOM) return;
+  ROOM = r;
+  document.querySelectorAll('.vcc-room').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  allMsgs = []; lastMsgTime = 0;
+  var el = document.getElementById('vccMsgs');
+  if (el) el.innerHTML = '<div class="vcc-sys">⏳ در حال بارگذاری...</div>';
+  fetchMsgs(); pingOnline();
+};
 
-    /* ★ SEC: بررسی ban سمت سرور */
-    if(data.banned&&data.banned[mI()]){
-      var banUntil=data.banned[mI()];
-      if(banUntil>Date.now()){S.ban=banUntil;sl('vcc_b',S.ban);}
+window.vccReply = function(key, u, txt) {
+  replyData = {k:key, u:u, txt:txt};
+  var bar = document.getElementById('vccReplyBar');
+  if (bar) bar.style.display = 'flex';
+  var n = document.getElementById('vccReplyName'), t = document.getElementById('vccReplyTxt');
+  if (n) n.textContent = u; if (t) t.textContent = txt;
+  var inp = document.getElementById('vccInput'); if (inp) inp.focus();
+};
+
+window.vccCancelReply = function() {
+  replyData = null;
+  var bar = document.getElementById('vccReplyBar');
+  if (bar) bar.style.display = 'none';
+};
+
+window.vccDelete = function(key) {
+  if (!key || !confirm('حذف شود؟')) return;
+  var u = getCurrentUser(); if (!u) return;
+  api('/delete', {key:key, un:u.user, room:ROOM}).then(function(r) {
+    if (r.ok) { allMsgs = allMsgs.filter(function(m){ return m._k !== key; }); renderMsgs(allMsgs); }
+  }).catch(function(){});
+};
+
+window.vccScrollTo = function(key) {
+  var el = document.getElementById('vm_' + key);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+};
+
+window.vccKeyDown = function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.vccSend(); }
+};
+
+window.vccAutoGrow = function(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 80) + 'px';
+};
+
+/* ====== رندر پیام‌ها ====== */
+var CLR = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#f97316','#84cc16'];
+
+function renderMsgs(msgs) {
+  var el = document.getElementById('vccMsgs'); if (!el) return;
+  var u = getCurrentUser(), myUn = u ? u.user : null;
+  var atBot = el.scrollTop >= el.scrollHeight - el.clientHeight - 80;
+  if (!msgs.length) { el.innerHTML = '<div class="vcc-sys">👋 اولین پیام را بفرستید!</div>'; return; }
+  var html = '';
+  msgs.forEach(function(m) {
+    if (m.sys) { html += '<div class="vcc-sys">' + esc(m.txt||'') + '</div>'; return; }
+    var isOwn = myUn && m.un === myUn, isBot = m.bot || m.un === '__bot__';
+    var ci = Math.abs(hsh(m.un||'x')) % CLR.length;
+    var av = isBot ? '#8b5cf6' : CLR[ci], ts = tStr(m.t), txt = m.txt || '';
+    html += '<div class="vcc-msg' + (isOwn?' own':'') + '" id="vm_' + ea(m._k||'') + '">';
+    html += '<div class="vcc-av" style="background:' + av + '">' + esc((m.u||'؟')[0]) + '</div>';
+    html += '<div class="vcc-body">';
+    html += '<div class="vcc-meta"><span class="vcc-name" style="color:' + av + '">' + esc(m.u||'ناشناس') + '</span>';
+    html += '<span class="vcc-time">' + ts + '</span></div>';
+    if (m.rep) {
+      html += '<div class="vcc-ref" onclick="window.vccScrollTo(\'' + ea(m.rep.k||'') + '\')">';
+      html += '<div class="vcc-ref-name">' + esc(m.rep.u||'') + '</div>' + esc((m.rep.txt||'').substring(0,60)) + '</div>';
     }
-
-    /* پیام‌های جدیدی که در S.msgs نیستن */
-    var added = false;
-    msgs.forEach(function(m){
-      if(!m||!m.ts)return;
-      /* duplicate check بر اساس id */
-      var exists = S.msgs.some(function(x){return x.id===m.id;});
-      if(exists){
-        /* اگه ویرایش شده، آپدیت کن */
-        if(m.edited){
-          var el=$$('vm'+m.id);
-          if(el){var nd=document.createElement('div');nd.innerHTML=rM(m);el.replaceWith(nd.firstChild);}
-          S.msgs=S.msgs.map(function(x){return x.id===m.id?m:x;});
-        }
-        return;
-      }
-      /* پیام جدید */
-      S.msgs.push(m);
-      addM(m);
-      if(m.userId!==mI())ping();
-      if(m.ts>S.lastTs)S.lastTs=m.ts;
-      added=true;
-    });
-
-    if(added){
-      try{sl('vcc_c_'+S.room,JSON.stringify(S.msgs.slice(-80)));}catch(e){}
+    html += '<div class="vcc-bubble ' + (isOwn?'own-b':'oth-b') + '">';
+    if (txt.indexOf('__CHART__') === 0) {
+      html += '<div class="chart-share-label">📊 تحلیل نمودار</div>';
+      html += '<div class="chart-share-wrap"><img class="chart-share-img" src="' + txt.substring(9) + '" onclick="window.open(this.src)" loading="lazy"></div>';
+    } else {
+      html += esc(txt).replace(/\n/g,'<br>');
     }
-  }catch(e){}
-}
-
-async function wSend(msg){
-  /* ★ SEC: بررسی rate limit قبل از ارسال */
-  if(!_wkRateCheck()){
-    sm('⏳ تعداد درخواست‌ها زیاد است. لطفاً صبر کنید','err');
-    return;
-  }
-  try{
-    var body=Object.assign({},msg);
-    /* ★ SEC: ضمیمه‌کردن توکن Turnstile (در صورت فعال‌بودن) */
-    if(TS_SITEKEY && window.turnstile && _tsWidget!=null){
-      try{body.cf_token=window.turnstile.getResponse(_tsWidget)||'';}catch(e){}
+    html += '</div>';
+    if (!isBot) {
+      html += '<div class="vcc-acts">';
+      html += '<button class="vcc-act" onclick="window.vccReply(\'' + ea(m._k||'') + '\',\'' + ea(m.u||'') + '\',\'' + ea(txt.substring(0,50)) + '\')">↩️</button>';
+      if (isOwn) html += '<button class="vcc-act" onclick="window.vccDelete(\'' + ea(m._k||'') + '\')">🗑</button>';
+      html += '</div>';
     }
-    /* POST با header سازگار با هر دو Worker قدیم و جدید */
-    var r=await fetch(WK+'/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-App-Origin':'gold19pro'},
-      body:JSON.stringify(body)
-    });
-    if(r.ok){try{var d=await r.json();if(d.fbKey)msg.fbKey=d.fbKey;}catch(e){}}
-    /* توکن Turnstile یک‌بارمصرف است؛ پس از ارسال ریست شود */
-    if(TS_SITEKEY && window.turnstile && _tsWidget!=null){try{window.turnstile.reset(_tsWidget);}catch(e){}}
-    return r.ok;
-  }catch(e){return false;}
-}
-async function wDel(room,id,fbKey,adminSecret){
-  var key=fbKey||id;
-  var h={};
-  if(adminSecret) h['X-Admin-Secret']=adminSecret; /* ★ SEC: حذف ادمین با راز سرور */
-  try{await fetch(WK+'/chat/'+encodeURIComponent(room)+'/'+encodeURIComponent(key),{method:'DELETE',headers:h});}catch(e){}
-}
-async function wEdit(room,id,fbKey,t){
-  var key=fbKey||id;
-  try{await fetch(WK+'/chat/'+encodeURIComponent(room)+'/'+encodeURIComponent(key),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t,edited:true})});}catch(e){}
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+  if (atBot || msgs.length <= 5) el.scrollTop = el.scrollHeight;
 }
 
-function startPoll(){
-  clearInterval(S.pt);
-  S.pt=setInterval(poll,POLL);
-  poll(); /* فوری */
-  if(!S._visSet){
-    S._visSet=true;
-    document.addEventListener('visibilitychange',function(){if(!document.hidden)poll();});
+function botCmd(text) {
+  var ps = text.split(' '), c = (ps[0]||'').toLowerCase();
+  if (c === '/help') return '📚 /price gold18 | /price usd | /time';
+  if (c === '/time') return '🕐 ' + new Date().toLocaleTimeString('fa-IR');
+  if (c === '/price') {
+    var mp = {'gold18':'gold18','طلا':'gold18','usd':'usd','دلار':'usd','coin':'coin','سکه':'coin'};
+    var k = mp[ps[1]] || ps[1] || 'gold18';
+    var pr = typeof getAssetPrice === 'function' ? getAssetPrice(k) : 0;
+    return k.toUpperCase() + ': ' + (pr ? Math.round(pr).toLocaleString('fa-IR') : '---');
   }
-  /* presence */
-  if(me()){
-    var pp=function(){
-      try{fetch(WK+'/presence/'+encodeURIComponent(mI()),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:mN()})});}catch(e){}
-    };
-    pp();clearInterval(S.apt);S.apt=setInterval(pp,120000);
-  }
+  return null;
 }
 
-/* ── Cooldown ── */
-function cDown(){
-  var btn=$$('vccSendBtn'),rem=COOL;
-  var iv=setInterval(function(){
-    rem-=1000;
-    if(rem<=0){clearInterval(iv);if(btn){btn.disabled=false;btn.textContent='➤';}}
-    else if(btn){btn.disabled=true;btn.textContent=fa(Math.ceil(rem/1000))+'ث';}
-  },1000);
-  if(btn){btn.disabled=true;btn.textContent=fa(COOL/1000)+'ث';}
-}
-
-/* ── Reply/Edit helpers ── */
-function canR(){S.rep=null;S.eid=null;var b=$$('vccReplyBar');if(b)b.style.display='none';}
-
-/* ── ban/warn log ── */
-function logB(n,t){
-  var l=[];try{l=JSON.parse(gl('vcc_banlogs')||'[]');}catch(e){}
-  l.push({n:n,t:t,ts:Date.now()});sl('vcc_banlogs',JSON.stringify(l.slice(-100)));
-}
-
-/* ══ PUBLIC API ══ */
-
-window.vccSend=function(){
-  var inp=$$('vccInput');if(!inp)return;
-  var txt=inp.value.trim();if(!txt)return;
-  if(Date.now()<S.ban){sm('🚫 تا '+fa(Math.ceil((S.ban-Date.now())/60000))+' دقیقه محدود هستید','err');return;}
-  var sc=Date.now()-S.last;
-  if(S.last>0&&sc<COOL){sm('⏳ '+fa(Math.ceil((COOL-sc)/1000))+' ثانیه صبر کنید','err');return;}
-  if(bad(txt)){
-    S.w++;sl('vcc_w',S.w);inp.value='';
-    if(S.w>=2){
-      S.ban=Date.now()+600000;sl('vcc_b',S.ban);logB(mN(),'ban');
-      sm('🚫 ۱۰ دقیقه محدود شدید','err');
-      /* ★ SEC: اطلاع به server برای ban سمت سرور */
-      try{fetch(WK+'/ban',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:mI(),until:S.ban,reason:'badword'})});}catch(e){}
-    }
-    else{logB(mN(),'warn');sm('⚠️ اخطار '+fa(S.w)+'/۲ — الفاظ نامناسب','err');}
-    return;
-  }
-  if(txt.length>400){sm('⚠️ حداکثر ۴۰۰ کاراکتر','err');return;}
-  /* ویرایش */
-  if(S.eid){
-    var _e=S.eid;
-    var em=S.msgs.find(function(m){return m.id===_e;});
-    if(em){
-      em.text=txt;em.edited=true;
-      var el=$$('vm'+_e);if(el){var nd=document.createElement('div');nd.innerHTML=rM(em);el.replaceWith(nd.firstChild);}
-      try{sl('vcc_c_'+S.room,JSON.stringify(S.msgs.slice(-80)));}catch(e){}
-      wEdit(S.room,_e,em.fbKey,txt);
-    }
-    S.eid=null;canR();inp.value='';inp.style.height='auto';return;
-  }
-  var msg={
-    id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),
-    room:S.room,userId:mI(),username:mN(),
-    text:txt,ts:Date.now(),replyTo:S.rep||null,edited:false,fbKey:null
+function fixShareBtn() {
+  var btn = document.getElementById('shareAnalysisBtn'); if (!btn) return;
+  btn.onclick = function() {
+    var mc = document.getElementById('mainChart');
+    if (!mc) { if (typeof toast==='function') toast('نمودار باز نیست','warn'); return; }
+    var u = getCurrentUser();
+    if (!u) { if (typeof toast==='function') toast('ابتدا وارد شوید','warn'); return; }
+    /* ★ FIX: drawChart اول، بعد export با تاخیر */
+    if (typeof drawChart === 'function') drawChart();
+    setTimeout(function(){
+      try {
+        if (mc.width===0||mc.height===0){if(typeof toast==='function')toast('نمودار خالی است','warn');return;}
+        var imgData = mc.toDataURL('image/png', 0.92);
+        if(!imgData||imgData.length<1000){if(typeof toast==='function')toast('خطا: نمودار قابل export نیست','err');return;}
+        pushMsg({room:ROOM, u:u.name, un:u.user, txt:'__CHART__'+imgData});
+        var chatBtn = document.querySelector('[data-pane="vip"]') || document.querySelector('[data-pane="chat"]');
+        if (chatBtn) chatBtn.click();
+        if (typeof toast==='function') toast('📤 تحلیل به چت ارسال شد','ok');
+      } catch(e) { if (typeof toast==='function') toast('خطا در ارسال','err'); }
+    }, 150);
   };
-  /* پیام رو فوری به DOM اضافه کن */
-  S.msgs.push(msg);
-  if(msg.ts>S.lastTs)S.lastTs=msg.ts;
-  addM(msg);
-  S.last=Date.now();
-  inp.value='';inp.style.height='auto';canR();cDown();
-  /* async ارسال به Firebase */
-  wSend(msg);
-};
-
-/* ★ FIX: ارسال تصویر نمودار به VCC از Gold18 */
-window.vccSendChart=function(imgUrl,userName){
-  var msg={
-    id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),
-    room:S.room,userId:mI(),username:mN()||(userName||'کاربر'),
-    text:'__CHART__'+imgUrl,ts:Date.now(),replyTo:null,edited:false,fbKey:null
-  };
-  S.msgs.push(msg);
-  if(msg.ts>S.lastTs)S.lastTs=msg.ts;
-  addM(msg);
-  S.last=Date.now();
-  wSend(msg);
-};
-
-window.vccRoom=function(btn){
-  var newRoom=btn.dataset.r;
-  if(S.room===newRoom)return;
-  /* ذخیره پیام‌های اتاق فعلی */
-  try{sl('vcc_c_'+S.room,JSON.stringify(S.msgs.slice(-80)));}catch(e){}
-  /* تغییر اتاق */
-  S.room=newRoom;
-  S.msgs=[];
-  S.lastTs=0; /* reset → poll همه پیام‌ها رو میاره */
-  /* لود cache اتاق جدید */
-  try{
-    var ch=JSON.parse(gl('vcc_c_'+newRoom)||'[]');
-    if(ch.length){S.msgs=ch;S.lastTs=0;} /* lastTs=0 → server همه رو برمیگردونه */
-  }catch(e){}
-  document.querySelectorAll('.vcc-room').forEach(function(b){b.classList.toggle('active',b.dataset.r===S.room);});
-  rAll();canR();
-  startPoll(); /* fetch از server */
-};
-
-window.vccKeyDown=function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();window.vccSend();}if(e.key==='Escape')canR();};
-window.vccAutoGrow=function(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';};
-
-/* ── Event delegation ── */
-document.addEventListener('click',function(e){
-  var t=e.target;
-  /* Reply */
-  var rb=t.closest('.vca-r');
-  if(rb){
-    var mid=rb.dataset.mid;
-    var m=S.msgs.find(function(x){return x.id===mid;});
-    if(m){S.rep={id:m.id,username:m.username,text:m.text};var b=$$('vccReplyBar');if(b){b.style.display='flex';var rn=b.querySelector('.vcc-reply-name');var rt=b.querySelector('.vcc-reply-text');if(rn)rn.textContent=m.username;if(rt)rt.textContent=(m.text||'').slice(0,60);}}
-    return;
-  }
-  /* Edit */
-  var eb=t.closest('.vca-e');
-  if(eb){
-    var mid=eb.dataset.mid;
-    var m=S.msgs.find(function(x){return x.id===mid;});
-    if(m&&(Date.now()-m.ts<EDIT)){S.eid=m.id;var inp=$$('vccInput');if(inp){inp.value=m.text;inp.focus();}}
-    return;
-  }
-  /* Delete own */
-  var db=t.closest('.vca-d');
-  if(db){
-    var mid=db.dataset.mid;
-    var m=S.msgs.find(function(x){return x.id===mid;});
-    if(m){S.msgs=S.msgs.filter(function(x){return x.id!==mid;});var el=$$('vm'+mid);if(el)el.remove();wDel(S.room,mid,m.fbKey);try{sl('vcc_c_'+S.room,JSON.stringify(S.msgs.slice(-80)));}catch(e){}}
-    return;
-  }
-  /* Admin delete */
-  var adb=t.closest('.vca-ad');
-  if(adb){
-    var mid=adb.dataset.mid;
-    var m=S.msgs.find(function(x){return x.id===mid;});
-    if(m){S.msgs=S.msgs.filter(function(x){return x.id!==mid;});var el=$$('vm'+mid);if(el)el.remove();wDel(S.room,mid,m.fbKey);try{sl('vcc_c_'+S.room,JSON.stringify(S.msgs.slice(-80)));}catch(e){}}
-    return;
-  }
-  /* Goto reply */
-  var ref=t.closest('.vcc-ref');
-  if(ref){
-    var id=ref.dataset.goto;var el=$$('vm'+id);
-    if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.outline='2px solid var(--gold)';setTimeout(function(){el.style.outline='';},1500);}
-    return;
-  }
-});
-
-/* ── Admin ── */
-window.admShow=function(){
-  /* ★ SEC: رمز ادمین در کلاینت ذخیره یا چاپ نمی‌شود؛ فقط در حافظه‌ی همین نشست نگه‌داری می‌شود
-     و صحت آن سمت سرور (Worker با X-Admin-Secret) بررسی می‌شود. */
-  var pw=prompt('رمز مدیریت (راز سرور):');
-  if(!pw){return;}
-  S.ADM=pw.trim();
-  var box=$$('vccAdmBox');if(box)box.style.display='block';
-  sm('🔑 حالت ادمین فعال شد (صحت توسط سرور بررسی می‌شود)','ok');
-};
-window.admDel=function(id){
-  var m=S.msgs.find(function(x){return x.id===id;});
-  S.msgs=S.msgs.filter(function(x){return x.id!==id;});
-  var el=$$('vm'+id);if(el)el.remove();
-  if(m)wDel(S.room,id,m.fbKey,S.ADM); /* ★ SEC: حذف ادمین با راز سرور */
-  try{sl('vcc_c_'+S.room,JSON.stringify(S.msgs.slice(-80)));}catch(e){}
-};
-window.admBan=function(uid){
-  if(!S.ADM){alert('ابتدا با دکمه مدیریت، راز ادمین را وارد کنید.');return;}
-  var until=Date.now()+3600000;
-  /* ★ SEC: بن فقط با راز سرور در هدر — سرور آن را اعتبارسنجی و اعمال می‌کند */
-  fetch(WK+'/ban',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':S.ADM},body:JSON.stringify({userId:uid,until:until,reason:'admin'})})
-    .then(function(r){
-      if(r.status===401){sm('⛔ راز ادمین اشتباه است','err');return;}
-      if(r.ok){sm('✅ کاربر بن شد','ok');}else{sm('⚠️ خطا در بن کردن','err');}
-    }).catch(function(){sm('⚠️ خطای شبکه','err');});
-};
-window.admChgP=function(){
-  /* ★ SEC: تغییر رمز ادمین سمت سرور انجام می‌شود (متغیر محیطی Worker).
-     این فیلد فقط راز را برای همین نشست در حافظه می‌گذارد. */
-  var i=$$('aNP');if(!i||!i.value.trim()){alert('راز ادمین را وارد کنید');return;}
-  S.ADM=i.value.trim();i.value='';alert('✅ راز ادمین برای این نشست تنظیم شد');
-};
-
-/* ── Ads ── */
-function startAds(){
-  try{S.ads=JSON.parse(gl('vcc_ads')||'[]');}catch(e){S.ads=[];}
-  rAdL();
-  if(S.ads.length){rAdB();S.apt2=setInterval(function(){S.adIdx=(S.adIdx+1)%S.ads.length;rAdB();},8000);}
 }
-function rAdB(){
-  var b=$$('vccAdBanner');if(!b||!S.ads.length)return;
-  var a=S.ads[S.adIdx%S.ads.length];
-  b.innerHTML='<div class="vcc-ad-item">📢 '+es(a.text)+'</div>';
-}
-function rAdL(){
-  var el=$$('a-adl');if(!el)return;
-  if(!S.ads.length){el.innerHTML='<div style="color:var(--text3);font-size:10px;padding:8px">آگهی‌ای ثبت نشده</div>';return;}
-  el.innerHTML=S.ads.map(function(a,i){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--bg3);border-radius:8px;margin-bottom:4px"><span style="font-size:10px">'+es(a.text)+'</span><button onclick="admDelAd('+i+')" style="background:var(--red);color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:9px;cursor:pointer">حذف</button></div>';}).join('');
-}
-window.admAddAd=function(){
-  var t=$$('a-adtxt');if(!t||!t.value.trim())return;
-  S.ads.push({text:t.value.trim(),ts:Date.now()});
-  sl('vcc_ads',JSON.stringify(S.ads));t.value='';rAdL();
-};
-window.admDelAd=function(i){S.ads.splice(i,1);sl('vcc_ads',JSON.stringify(S.ads));rAdL();};
 
-/* ── INIT ── */
-setTimeout(function(){
-  if(!$$('vccMsgs'))return;
+ /* ====== ابزارها ====== */
+function tStr(t){ var d=t?new Date(t):new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ea(s){ return String(s||'').replace(/'/g,'&#39;').replace(/\n/g,' ').replace(/"/g,'&quot;'); }
+function hsh(s){ var h=0; for(var i=0;i<s.length;i++) h=Math.imul(31,h)+s.charCodeAt(i)|0; return h; }
 
-  
-  /* بارگذاری state */
-  try{S.w=parseInt(gl('vcc_w')||'0');}catch(e){}
-  try{var b=parseInt(gl('vcc_b')||'0');if(b>Date.now())S.ban=b;}catch(e){}
-  /* ★ SEC: رمز ادمین دیگر در کلاینت ساخته/ذخیره/چاپ نمی‌شود.
-     راز ادمین فقط متغیر محیطی سمت Worker است و مدیر آن را هنگام نیاز وارد می‌کند. */
-  S.ADM=null;
-  try{localStorage.removeItem('vcc_ap');}catch(e){} /* پاک‌سازی رمز نشت‌شده‌ی قبلی */
-
-  /* ★ SEC: رندر ویجت Turnstile در صورت تنظیم کلید سایت */
-  (function initTurnstile(tries){
-    if(!TS_SITEKEY){return;}
-    var c=$$('vccTurnstile');if(!c)return;
-    if(!window.turnstile){ if((tries||0)<20)setTimeout(function(){initTurnstile((tries||0)+1);},500); return; }
-    try{_tsWidget=window.turnstile.render(c,{sitekey:TS_SITEKEY,size:'flexible',theme:'auto'});}catch(e){}
-  })(0);
-  /* cache اتاق فعلی */
-  try{
-    var ch=JSON.parse(gl('vcc_c_'+S.room)||'[]');
-    if(ch.length){S.msgs=ch;}
-    /* lastTs=0 → poll همه پیام‌ها رو از server میاره */
-    S.lastTs=0;
-  }catch(e){}
-  rAll();
-  startPoll();
-  startAds();
-},700);
+/* ====== شروع ====== */
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else setTimeout(init, 200);
 
 })();
-/* ══ END VCC ══════════════════════════════════════════ */
 </script>
 <div class="pane" id="tradingview" style="padding:8px;height:calc(100vh - 80px);box-sizing:border-box;">
   <div class="tradingview-widget-container" style="height:100%;width:100%">
